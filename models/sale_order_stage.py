@@ -14,7 +14,7 @@ class SaleOrderStage(models.Model):
 
     @api.depends_context('uid')
     def _compute_is_current_user_stage_admin(self):
-        is_admin = self.env.su or self.env.user.has_group('base.group_system') or self.env.user.is_admin_stage_team
+        is_admin = self.env.su or self.env.user.is_admin_stage_team
         for stage in self:
             stage.is_current_user_stage_admin = is_admin
 

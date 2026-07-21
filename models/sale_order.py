@@ -13,7 +13,7 @@ class SaleOrder(models.Model):
     @api.depends('stage_id') # We just need it to trigger on load
     def _compute_allowed_stage_ids(self):
         user = self.env.user
-        if self.env.su or user.has_group('base.group_system') or user.is_admin_stage_team:
+        if self.env.su or user.is_admin_stage_team:
             # Full access, all stages allowed
             all_stages = self.env['sale.order.stage'].search([])
             for order in self:
@@ -55,7 +55,7 @@ class SaleOrder(models.Model):
 
     def _check_stage_team_access(self, new_stage_id):
         user = self.env.user
-        if self.env.su or user.has_group('base.group_system'):
+        if self.env.su:
             return
 
         if user.is_admin_stage_team:
