@@ -6,7 +6,8 @@
         <field name="inherit_id" ref="sale_order_stage_management.view_sale_order_stage_form"/>
         <field name="arch" type="xml">
             <xpath expr="//sheet/group" position="inside">
-                <group string="Team Access">
+                <field name="is_current_user_stage_admin" invisible="1"/>
+                <group string="Team Access" invisible="not is_current_user_stage_admin">
                     <field name="is_csr_stage"/>
                     <field name="is_store_stage"/>
                     <field name="is_purchase_stage"/>
