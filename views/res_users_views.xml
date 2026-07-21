@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
-    <!-- Add "Stage Access" tab on the Users form (Settings > Users) -->
     <record id="view_users_form_inherit_stage_team" model="ir.ui.view">
         <field name="name">res.users.form.inherit.stage.team</field>
         <field name="model">res.users</field>
@@ -10,13 +8,19 @@
             <notebook position="inside">
                 <page string="Stage Access" name="stage_access">
                     <group>
-                        <field name="team_ids" widget="many2many_checkboxes"/>
+                        <group string="Assigned Teams">
+                            <field name="is_admin_stage_team"/>
+                            <field name="is_csr_stage_team"/>
+                            <field name="is_store_stage_team"/>
+                            <field name="is_purchase_stage_team"/>
+                            <field name="is_logistics_stage_team"/>
+                        </group>
                     </group>
                     <div class="alert alert-warning" role="alert">
                         Select the Team(s) this user belongs to. This
                         determines which Sale Order stages the user is
                         allowed to move an order into. Users assigned to
-                        the "Admin" team (or real Odoo System
+                        the "Admin Stage Team" (or real Odoo System
                         Administrators) can move orders to any stage.
                     </div>
                 </page>
@@ -24,19 +28,20 @@
         </field>
     </record>
 
-    <!-- Same tab on "My Profile" simplified preferences form -->
     <record id="view_users_preferences_form_inherit_stage_team" model="ir.ui.view">
         <field name="name">res.users.preferences.form.inherit.stage.team</field>
         <field name="model">res.users</field>
         <field name="inherit_id" ref="base.view_users_form_simple_modif"/>
         <field name="arch" type="xml">
             <xpath expr="//sheet" position="inside">
-                <group string="Sale Stage Access"
-                       invisible="not id">
-                    <field name="team_ids" widget="many2many_checkboxes" readonly="1"/>
+                <group string="Sale Stage Access" invisible="not id">
+                    <field name="is_admin_stage_team" readonly="1"/>
+                    <field name="is_csr_stage_team" readonly="1"/>
+                    <field name="is_store_stage_team" readonly="1"/>
+                    <field name="is_purchase_stage_team" readonly="1"/>
+                    <field name="is_logistics_stage_team" readonly="1"/>
                 </group>
             </xpath>
         </field>
     </record>
-
 </odoo>

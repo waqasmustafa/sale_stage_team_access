@@ -1,61 +1,81 @@
-# -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
-
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
+    allowed_stage_ids = fields.Many2many(
+        'sale.order.stage', 
+        compute='_compute_allowed_stage_ids',
+        store=False
+    )
+
+    @api.depends('stage_id') # We just need it to trigger on load
+    def _compute_allowed_stage_ids(self):
+        user = self.env.user
+        if self.env.su or user.has_group('base.group_system') or user.is_admin_stage_team:
+            # Full access, all stages allowed
+            all_stages = self.env['sale.order.stage'].search([])
+            for order in self:
+                order.allowed_stage_ids = all_stages
+            return
+
+        domain = []
+        if user.is_csr_stage_team:
+            domain.append(('is_csr_stage', '=', True))
+        if user.is_store_stage_team:
+            domain.append(('is_store_stage', '=', True))
+        if user.is_purchase_stage_team:
+            domain.append(('is_purchase_stage', '=', True))
+        if user.is_logistics_stage_team:
+            domain.append(('is_logistics_stage', '=', True))
+
+        if not domain:
+            for order in self:
+                # Need to allow current stage at least so it doesn't break form view load
+                order.allowed_stage_ids = order.stage_id if order.stage_id else False
+            return
+
+        # Combine domains with OR
+        final_domain = ['|'] * (len(domain) - 1) + domain
+        allowed_stages = self.env['sale.order.stage'].search(final_domain)
+
+        for order in self:
+            # Always allow the current stage to prevent form view from breaking when viewing an order 
+            # in a stage the user can't move to (but they might just be viewing the order).
+            if order.stage_id and order.stage_id not in allowed_stages:
+                order.allowed_stage_ids = allowed_stages | order.stage_id
+            else:
+                order.allowed_stage_ids = allowed_stages
+
     def write(self, vals):
-        # 'stage_id' below must match the technical field name on
-        # sale.order that stores your custom Kanban stage. Change it
-        # here if your field name is different.
         if 'stage_id' in vals and vals.get('stage_id'):
             self._check_stage_team_access(vals['stage_id'])
         return super(SaleOrder, self).write(vals)
 
     def _check_stage_team_access(self, new_stage_id):
-        """Raise a UserError if the current user is not allowed to move
-        this order into the requested stage.
-        """
         user = self.env.user
-
-        # 1. Superuser / technical calls (e.g. automations, scripts) are
-        #    never restricted.
-        if self.env.su:
+        if self.env.su or user.has_group('base.group_system'):
             return
 
-        # 2. Real Odoo System Administrators always have full access.
-        if user.has_group('base.group_system'):
+        if user.is_admin_stage_team:
             return
 
-        teams = user.team_ids
+        stage = self.env['sale.order.stage'].browse(new_stage_id)
+        
+        # Check if user has permission for this specific stage
+        allowed = False
+        if stage.is_csr_stage and user.is_csr_stage_team:
+            allowed = True
+        elif stage.is_store_stage and user.is_store_stage_team:
+            allowed = True
+        elif stage.is_purchase_stage and user.is_purchase_stage_team:
+            allowed = True
+        elif stage.is_logistics_stage and user.is_logistics_stage_team:
+            allowed = True
 
-        # 3. No team assigned at all -> block, with a clear message.
-        if not teams:
+        if not allowed:
             raise UserError(_(
-                "You are not assigned to any Team, so you are not "
-                "allowed to change the Sale Order stage. Please contact "
-                "your administrator."
-            ))
-
-        # 4. If any of the user's teams is the 'Admin' (full access)
-        #    team, allow any stage.
-        if any(team.is_admin_team for team in teams):
-            return
-
-        # 5. Otherwise, the new stage must be within the combined list
-        #    of allowed stages for all of the user's teams.
-        allowed_stage_ids = teams.mapped('stage_ids').ids
-        if new_stage_id not in allowed_stage_ids:
-            stage = self.env['sale.order.stage'].browse(new_stage_id)
-            team_names = ', '.join(teams.mapped('name'))
-            raise UserError(_(
-                "You are not allowed to move this order to the '%(stage)s' "
-                "stage.\n\nYour Team(s): %(teams)s\n"
-                "Please contact your administrator if you believe this "
-                "is a mistake."
-            ) % {
-                'stage': stage.name,
-                'teams': team_names,
-            })
+                "You are not allowed to move this order to the '%(stage)s' stage.\n"
+                "Please contact your administrator if you believe this is a mistake."
+            ) % {'stage': stage.name})

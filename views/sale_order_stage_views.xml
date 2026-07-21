@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sale_order_stage_form_inherit_team_access" model="ir.ui.view">
+        <field name="name">sale.order.stage.form.inherit.team.access</field>
+        <field name="model">sale.order.stage</field>
+        <field name="inherit_id" ref="sale_order_stage_management.sale_order_stage_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group" position="inside">
+                <group string="Team Access">
+                    <field name="is_csr_stage"/>
+                    <field name="is_store_stage"/>
+                    <field name="is_purchase_stage"/>
+                    <field name="is_logistics_stage"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
