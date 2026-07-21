@@ -1,6 +1,6 @@
 {
     'name': 'Sale Order Stage Team Access',
-    'version': '18.0.1.0.0',
+    'version': '19.0.1.0.0',
     'summary': 'Restrict Sale Order stage movement based on Team Assignment Checkboxes',
     'description': """
 Sale Order Stage Team Access
